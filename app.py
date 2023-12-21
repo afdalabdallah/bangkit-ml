@@ -35,7 +35,7 @@ def process_image(image_path):
     with open(json_path, 'r') as json_file:
         data = json.load(json_file)
 
-    image_path = data['path']
+    image_segmented_path = data['path']
     image = cv2.imread(image_path)
     highest_confidence_per_label = {}
     for prediction in data['prediction']:
@@ -57,7 +57,7 @@ def process_image(image_path):
                 
             }
             ,
-            "path": image_path
+            "path": image_segmented_path
         }
     for label, highest_confidence_prediction in highest_confidence_per_label.items():
         bounding_box = highest_confidence_prediction['bounding_box']
