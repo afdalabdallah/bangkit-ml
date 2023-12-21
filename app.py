@@ -264,8 +264,9 @@ def process_image(image_path):
         cropped_by_label = {}
         cropped_by_label[label] = cropped_roi
         cropped_image.append(cropped_by_label)
+        rgb_image = cv2.cvtColor(cropped_roi, cv2.COLOR_BGR2RGB)
         color_model = load_model('./color_classification_cnn_model.h5')
-        categories = predict_and_display(image, color_model)
+        categories = predict_and_display(rgb_image, color_model)
 
         convert_putih = ["Pink","Cream","Gray","Red","Yellow"]
         convert_brown = ["Purple","Orange","Green","Blue"]
