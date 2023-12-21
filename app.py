@@ -147,7 +147,8 @@ def detect_function(source, weights, name,img_size=640, conf_thres=0.25, iou_thr
                 result = {
                 # "directory": str(save_dir),
                 "path": str(source),
-                "prediction":[]
+                "prediction":[],
+                
                 }
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
@@ -176,6 +177,7 @@ def detect_function(source, weights, name,img_size=640, conf_thres=0.25, iou_thr
                             "bounding_box": [float(coord) for coord in xyxy],
                             # "img": im0
                         }
+                    result["img"] = im0
                     result["prediction"].append(prediction_info)
 
             # Print time (inference + NMS)
@@ -195,30 +197,36 @@ def detect(image_path, image_name):
     # detection_command = f"python ./yolov7/detect.py --weights ./yolov7/best.pt --conf 0.1 --source {image_path} --name {image_name}"
     # result = subprocess.run(detection_command, shell=True, text=True, capture_output=True)
 
-def predict_and_display(image_path, model):
-    img_array = preprocess_image(image_path)
+def predict_and_display(image, model):
+    img_array = preprocess_image(image)
     CATEGORIES = ['Black', 'Blue', 'Brown', 'Gray', 'Green', 'Orange', 'Pink', 'Purple', 'Red', 'White', 'Yellow']
     predictions = model.predict(img_array)
     predicted_class = np.argmax(predictions)
     return CATEGORIES[predicted_class]
 
-def preprocess_image(image_path):
-    img = image.load_img(image_path, target_size=(32, 32))
-    img_array = image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array /= 255.0
+def preprocess_image(image_array, target_size=(32,32)):
+    resized_image = cv2.resize(image_array, (target_size[1], target_size[0]))
+    img_array = np.expand_dims(resized_image, axis=0)
+    img_array = img_array.astype('float32') / 255.0
     return img_array
 
 def process_image(image_path):
     image_name = os.path.splitext(os.path.basename(image_path))[0]
     segmentation_result = detect(image_path, image_name)
-    print(segmentation_result)
+    # print(segmentation_result)
     # json_path = f'./runs/detect/{image_name}/result.json'
 
     # with open(json_path, 'r') as json_file:
     #     data = json.load(json_file)
 
     image_segmented_path = segmentation_result['path']
+    # Testing to see segmentation img
+    # The segmentation image is in segmentation_result["img"]
+    # os.makedirs(f'./result', exist_ok=True)
+    # save_path = f'./result/result.jpg'
+    # cv2.imwrite(save_path, segmentation_result["img"])
+
+
     image = cv2.imread(image_path)
     highest_confidence_per_label = {}
     for prediction in segmentation_result['prediction']:
@@ -240,7 +248,8 @@ def process_image(image_path):
                 
             }
             ,
-            "path": image_segmented_path
+            "path": image_segmented_path,
+            "segmented_image": segmentation_result["img"]
         }
     cropped_image =[]
     for label, highest_confidence_prediction in highest_confidence_per_label.items():
@@ -255,6 +264,9 @@ def process_image(image_path):
         cropped_by_label = {}
         cropped_by_label[label] = cropped_roi
         cropped_image.append(cropped_by_label)
+        color_model = load_model('./color_classification_cnn_model.h5')
+        categories = predict_and_display(image, color_model)
+
         convert_putih = ["Pink","Cream","Gray","Red","Yellow"]
         convert_brown = ["Purple","Orange","Green","Blue"]
         if label == "skin":
